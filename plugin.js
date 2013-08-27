@@ -145,7 +145,7 @@ CKEDITOR.plugins.add( 'autolink',{
 
           range.insertNode(a);
           a.parentNode.insertBefore(text, a.nextSibling);
-          range.setStart(text, 0);
+          range.setStart(text.nextSibling, 0); // 设置回车键改变链接后换行
           range.collapse(true);
           sel.removeAllRanges();
           sel.addRange(range);
