@@ -6,7 +6,7 @@
  */
 CKEDITOR.plugins.add( 'autolink',{
 	init:function(editor){
-		editor.on( 'instanceReady', function(e) { 
+		editor.on( 'instanceReady', function() {
       var cont = 0;
       // 跳过IE浏览器
       if (CKEDITOR.env.ie) {
@@ -33,7 +33,39 @@ CKEDITOR.plugins.add( 'autolink',{
           }[m]
         }) : '';
       }
-      
+      var isArray = function (obj) {
+        return Object.prototype.toString.apply(obj) == '[object Array]';
+      }
+      var isBody = function (node) {
+        return  node && node.nodeType == 1 && node.tagName.toLowerCase() == 'body';
+      }
+      var listToMap = function (list) {
+        if (!list)return {};
+        list = isArray(list) ? list : list.split(',');
+        for (var i = 0, ci, obj = {}; ci = list[i++];) {
+          obj[ci.toUpperCase()] = obj[ci] = 1;
+        }
+        return obj;
+      }
+      var findParent = function (node, filterFn, includeSelf) {
+        if (node && !isBody(node)) {
+          node = includeSelf ? node : node.parentNode;
+          while (node) {
+            if (!filterFn || filterFn(node) || isBody(node)) {
+              return filterFn && !filterFn(node) && isBody(node) ? null : node;
+            }
+            node = node.parentNode;
+          }
+        }
+        return null;
+      }
+      var findParentByTagName = function (node, tagNames, includeSelf, excludeFn) {
+        tagNames = listToMap(isArray(tagNames) ? tagNames : [tagNames]);
+        return findParent(node, function (node) {
+          return tagNames[node.tagName] && !(excludeFn && excludeFn(node));
+         }, includeSelf);
+      }
+
       editor.document.on('reset', function() {
         cont = 0;
       });
@@ -55,11 +87,14 @@ CKEDITOR.plugins.add( 'autolink',{
           }
 
           do {
-            if (range.startOffset == 0) { 
+            if (range.startOffset == 0) {
               start = range.startContainer.previousSibling;
 
               while (start && start.nodeType == 1) {
-                start = start.lastChild;
+                if (CKEDITOR.env.gecko && start.firstChild)
+                  start = start.firstChild;
+                else
+                  start = start.lastChild;
               }
               if (!start || isFillChar(start)){
                 break;
@@ -72,13 +107,13 @@ CKEDITOR.plugins.add( 'autolink',{
           range.setStart(start, offset - 1);
           charCode = range.toString().charCodeAt(0);
         } while (charCode != 160 && charCode != 32);
-        
+
         if (range.toString().replace(new RegExp(fillChar, 'g'), '').match(/(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.)/i)) {
           while(range.toString().length){
             if(/^(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.)/i.test(range.toString())){
               break;
             }
-            try{ 
+            try{
               range.setStart(range.startContainer,range.startOffset+1);
             }catch(e){
               var start = range.startContainer;
@@ -90,6 +125,11 @@ CKEDITOR.plugins.add( 'autolink',{
               }
               range.setStart(next,0);
             }
+          }
+
+          // 已经处理过就不再处理了
+          if (findParentByTagName(range.startContainer,'a',true)){
+            return;
           }
 
           //添加<a>标签
