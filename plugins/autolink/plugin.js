@@ -1,6 +1,6 @@
 /**
  * @AutoLink plugin for CKEditor (2013.08.23)
- * @description 给非IE浏览器的链接自动添加<a>标签
+ * @description auto-add <a> label to non-IE browsers
  * @author Hayden Wei
  * @version 1.0
  */
@@ -8,20 +8,16 @@ CKEDITOR.plugins.add( 'autolink',{
 	init:function(editor){
 		editor.on( 'instanceReady', function() {
       var cont = 0;
-      // 跳过IE浏览器
       if (CKEDITOR.env.ie) {
         return;
       }
       var fillChar = CKEDITOR.env.ie && CKEDITOR.env.version == '6' ? '\ufeff' : '\u200B';
-      // 判断node节点是否为<br>
       var isFillChar = function (node,isInStart) {
         return node.nodeType == 3 && !node.nodeValue.replace(new RegExp((isInStart ? '^' : '' ) + fillChar), '').length
       }
-      // 判断node节点是否为<body>
       var isBody = function (node) {
         return  node && node.nodeType == 1 && node.tagName.toLowerCase() == 'body';
       }
-      // 将str中的转义字符还原成html字符
       var html = function (str) {
         return str ? str.replace(/&((g|l|quo)t|amp|#39);/g, function (m) {
           return {
@@ -127,12 +123,10 @@ CKEDITOR.plugins.add( 'autolink',{
             }
           }
 
-          // 已经处理过就不再处理了
           if (findParentByTagName(range.startContainer,'a',true)){
             return;
           }
 
-          //添加<a>标签
           var a = document.createElement('a'),text = document.createTextNode(' '),href;
 
           editor.undoManger && editor.undoManger.save();
@@ -145,7 +139,7 @@ CKEDITOR.plugins.add( 'autolink',{
 
           range.insertNode(a);
           a.parentNode.insertBefore(text, a.nextSibling);
-          range.setStart(text.nextSibling, 0); // 设置回车键改变链接后换行
+          range.setStart(text.nextSibling, 0);
           range.collapse(true);
           sel.removeAllRanges();
           sel.addRange(range);
@@ -153,11 +147,11 @@ CKEDITOR.plugins.add( 'autolink',{
         }
 			}
     editor.document.on("keydown", function(e) {
-		  if (e.data.getKey() == 32) //空格
+		  if (e.data.getKey() == 32)
         editor.autolink(e);
     });
     editor.document.on("keyup", function(e) {
-		  if (e.data.getKey() == 13) //回车
+		  if (e.data.getKey() == 13)
         editor.autolink(e);
     });
     });

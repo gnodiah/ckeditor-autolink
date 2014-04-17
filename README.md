@@ -9,13 +9,13 @@ plain text.
 1. git clone this plugin repo:
 
    ```shell
-   git clone https://github.com/Gnodiah/autolink.git autolink
+   git clone https://github.com/Gnodiah/ckeditor-autolink.git autolink
    ```
 2. copy this plugin directory to your ckeditor's plugins directory:
 
    ```shell
-   rm -rf autolink/.git  # maybe you wanna delete .git directory first
-   cp -r autolink your_dir_path/ckeditor/plugins
+   cd autolink
+   cp -r plugins/autolink your_dir_path/ckeditor/plugins
    ```
 3. add this plugin to your ckeditor's **config.js**, like this:
 
