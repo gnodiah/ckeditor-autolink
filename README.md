@@ -14,6 +14,7 @@ plain text.
 2. copy this plugin directory to your ckeditor's plugins directory:
 
    ```shell
+   rm -rf autolink/.git  # maybe you wanna delete .git directory first
    cp -r autolink your_dir_path/ckeditor/plugins
    ```
 3. add this plugin to your ckeditor's **config.js**, like this:
