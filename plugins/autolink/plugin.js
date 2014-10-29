@@ -146,14 +146,11 @@ CKEDITOR.plugins.add( 'autolink',{
           editor.undoManger && editor.undoManger.save();
         }
 			}
-    editor.document.on("keydown", function(e) {
-		  if (e.data.getKey() == 32)
-        editor.autolink(e);
-    });
-    editor.document.on("keyup", function(e) {
-		  if (e.data.getKey() == 13)
-        editor.autolink(e);
-    });
+	    
+	    editor.on("key", function(e) {
+	        if (e.data.keyCode === 32 || e.data.keyCode === 13)
+	            editor.autolink(e);
+	    });
     });
 	}
 });
