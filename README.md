@@ -5,6 +5,8 @@ plain text.
 
 **NOTE:** To make this plugin works, you should type an extra character such as **SPACE KEY** or **ENTER KEY**.
 
+**Supported Chrome/Firefox/IE **
+
 ## How to use
 1. git clone this plugin repo:
 
@@ -29,7 +31,7 @@ OK, now it works!
 
 The MIT License (MIT)
 
-Copyright (c) 2014 Hayden Wei
+Copyright (c) 2014-2015 gnodiah(Hayden Wei)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
