@@ -5,7 +5,7 @@ plain text.
 
 **NOTE:** To make this plugin works, you should type an extra character such as **SPACE KEY** or **ENTER KEY**.
 
-**Supported Chrome/Firefox/IE**
+**Browsers supported:** Chrome/Firefox/IE
 
 ## How to use
 1. git clone this plugin repo:
