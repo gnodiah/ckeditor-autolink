@@ -1,0 +1,24 @@
+{
+  "name": "ckeditor-autolink",
+  "version": "0.0.2",
+  "description": "A hyperlink auto-generator plugin for CKEditor",
+  "main": "plugins/autolink/plugin.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gnodiah/ckeditor-autolink.git"
+  },
+  "keywords": [
+    "hyperlink",
+    "auto-generator",
+    "CKEditor"
+  ],
+  "author": "Gnodiah",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Gnodiah/ckeditor-autolink/issues"
+  },
+  "homepage": "https://github.com/Gnodiah/ckeditor-autolink#readme"
+}
