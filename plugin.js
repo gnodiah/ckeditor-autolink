@@ -1,9 +1,9 @@
 (function() {
     'use strict';
 
-    CKEDITOR.plugins.add('autolink', {
+    CKEDITOR.plugins.add('autolink2', {
         modes: { 'wysiwyg': 1 },
-        
+
         init: function(editor) {
             editor.on('instanceReady', function() {
                 // skip IE

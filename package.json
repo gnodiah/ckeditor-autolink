@@ -1,6 +1,6 @@
 {
-  "name": "ckeditor-autolink",
-  "version": "0.0.3",
+  "name": "ckeditor-autolink2",
+  "version": "0.0.4",
   "description": "A hyperlink auto-generator plugin for CKEditor",
   "main": "plugin.js",
   "scripts": {
@@ -18,11 +18,11 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Katochimoto/ckeditor-autolink/issues",
+    "url": "https://github.com/Katochimoto/ckeditor-autolink2/issues",
     "email": "bufpost@yandex.ru"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/Katochimoto/ckeditor-autolink.git"
+    "url": "git://github.com/Katochimoto/ckeditor-autolink2.git"
   }
 }
