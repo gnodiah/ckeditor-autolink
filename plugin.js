@@ -1,6 +1,12 @@
 (function() {
     'use strict';
 
+    var REG_CHECK_LINK = /(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.|mailto:)/i;
+    var REG_CHECK_LINK_START = /^(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.|mailto:)/i;
+    var REG_HTTP = /^https?:\/\//i;
+    var REG_MAILTO = /^mailto:([^\?]+)/i;
+    var REG_EMAIL = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})$/i;
+
     CKEDITOR.plugins.add('autolink2', {
         modes: { 'wysiwyg': 1 },
 
@@ -18,28 +24,8 @@
                     return node.nodeType == 3 && !node.nodeValue.replace(new RegExp((isInStart ? '^' : '' ) + fillChar), '').length
                 };
 
-                var isBody = function (node) {
-                    return  node && node.nodeType == 1 && node.tagName.toLowerCase() == 'body';
-                };
-
-                var html = function (str) {
-                    return str ? str.replace(/&((g|l|quo)t|amp|#39);/g, function (m) {
-                        return {
-                          '&lt;':'<',
-                          '&amp;':'&',
-                          '&quot;':'"',
-                          '&gt;':'>',
-                          '&#39;':"'"
-                        }[m];
-                    }) : '';
-                };
-
-                var isArray = function (obj) {
-                    return Object.prototype.toString.apply(obj) == '[object Array]';
-                };
-
-                var isBody = function (node) {
-                    return  node && node.nodeType == 1 && node.tagName.toLowerCase() == 'body';
+                var inContext = function(node) {
+                    return editor.editable().$.contains(node);
                 };
 
                 var listToMap = function (list) {
@@ -47,7 +33,7 @@
                         return {};
                     }
 
-                    list = isArray(list) ? list : list.split(',');
+                    list = CKEDITOR.tools.isArray(list) ? list : list.split(',');
                     for (var i = 0, ci, obj = {}; ci = list[i++];) {
                         obj[ci.toUpperCase()] = obj[ci] = 1;
                     }
@@ -56,11 +42,11 @@
                 };
 
                 var findParent = function (node, filterFn, includeSelf) {
-                    if (node && !isBody(node)) {
+                    if (node && inContext(node)) {
                         node = includeSelf ? node : node.parentNode;
                         while (node) {
-                            if (!filterFn || filterFn(node) || isBody(node)) {
-                                return filterFn && !filterFn(node) && isBody(node) ? null : node;
+                            if (!filterFn || filterFn(node) || !inContext(node)) {
+                                return filterFn && !filterFn(node) && !inContext(node) ? null : node;
                             }
                             node = node.parentNode;
                         }
@@ -69,7 +55,7 @@
                 };
 
                 var findParentByTagName = function (node, tagNames, includeSelf, excludeFn) {
-                    tagNames = listToMap(isArray(tagNames) ? tagNames : [tagNames]);
+                    tagNames = listToMap(CKEDITOR.tools.isArray(tagNames) ? tagNames : [tagNames]);
                     return findParent(node, function (node) {
                         return tagNames[node.tagName] && !(excludeFn && excludeFn(node));
                     }, includeSelf);
@@ -121,47 +107,64 @@
 
                     } while (charCode != 160 && charCode != 32);
 
-                    if (range.toString().replace(new RegExp(fillChar, 'g'), '').match(/(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.)/i)) {
-                        while(range.toString().length){
-                            if(/^(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.)/i.test(range.toString())) {
+                    if (REG_CHECK_LINK.test(range.toString().replace(new RegExp(fillChar, 'g'), ''))) {
+                        while (range.toString().length) {
+                            if (REG_CHECK_LINK_START.test(range.toString())) {
                                 break;
                             }
 
-                            try{
-                                range.setStart(range.startContainer,range.startOffset+1);
+                            try {
+                                range.setStart(range.startContainer, range.startOffset + 1);
+
                             } catch(e) {
                                 var start = range.startContainer;
+
                                 while (!(next = start.nextSibling)) {
-                                    if (isBody(start)) {
+                                    if (!inContext(start)) {
                                         return;
                                     }
+
                                     start = start.parentNode;
                                 }
-                                range.setStart(next,0);
+
+                                range.setStart(next, 0);
                             }
                         }
 
-                        if (findParentByTagName(range.startContainer,'a',true)) {
+                        var mailto = range.toString().match(REG_MAILTO);
+                        if (mailto) {
+                            if (!REG_EMAIL.test(mailto[ 1 ])) {
+                                return;
+                            }
+                        }
+
+                        if (findParentByTagName(range.startContainer, 'a', true)) {
                             return;
                         }
 
-                        var a = document.createElement('a'), text = document.createTextNode(' '), href;
+                        editor.fire('saveSnapshot');
 
-                        editor.undoManger && editor.undoManger.save();
+                        var a = document.createElement('a');
                         a.appendChild(range.extractContents());
                         a.href = a.innerHTML = a.innerHTML.replace(/<[^>]+>/g, '');
-                        href = a.getAttribute("href").replace(new RegExp(fillChar,'g'), '');
-                        href = /^(?:https?:\/\/)/ig.test(href) ? href : "http://"+ href;
-                        a.setAttribute('_src', html(href));
-                        a.href = html(href);
 
+                        var href = a.getAttribute('href').replace(new RegExp(fillChar, 'g'), '');
+                        if (!REG_HTTP.test(href) && !mailto) {
+                            href = 'http://' + href;
+                        }
+
+                        a.setAttribute('data-cke-saved-href', CKEDITOR.tools.htmlDecodeAttr(href));
+                        a.href = CKEDITOR.tools.htmlDecodeAttr(href);
                         range.insertNode(a);
+
+                        var text = document.createTextNode(' ');
                         a.parentNode.insertBefore(text, a.nextSibling);
                         range.setStart(text.nextSibling, 0);
                         range.collapse(true);
                         sel.removeAllRanges();
                         sel.addRange(range);
-                        editor.undoManger && editor.undoManger.save();
+
+                        editor.fire('saveSnapshot');
                     }
                 };
 
