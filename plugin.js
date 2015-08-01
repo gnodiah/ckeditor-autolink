@@ -8,6 +8,7 @@
     var REG_HTTP = /^https?:\/\//i;
     var REG_MAILTO = /^mailto:([^\?]+)/i;
     var REG_EMAIL = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})$/i;
+    var REG_BREAK_STRING = /(?:^|\s)\S+$/;
 
     CKEDITOR.plugins.add('autolink2', {
         'modes': { 'wysiwyg': 1 },
@@ -35,65 +36,87 @@
 
     function autolink(editor) {
         var context = editor.editable().$;
-        var selection = editor.getSelection().getNative();
-        var range = selection.getRangeAt(0).cloneRange();
+        var selection = editor.getSelection();
+        var rangeNative = selection.getNative().getRangeAt(0).cloneRange();
         var offset;
         var charCode;
-        var start = range.startContainer;
+        var start = rangeNative.startContainer;
+        var execReg;
+        var diff;
 
-        while (start.nodeType === Node.ELEMENT_NODE && range.startOffset > 0) {
-            start = range.startContainer.childNodes[ range.startOffset - 1 ];
+        while (start.nodeType === Node.ELEMENT_NODE && rangeNative.startOffset > 0) {
+            start = rangeNative.startContainer.childNodes[ rangeNative.startOffset - 1 ];
             if (!start) {
                 break;
             }
 
-            range.setStart(start, start.nodeType === Node.ELEMENT_NODE ? start.childNodes.length : start.nodeValue.length);
-            range.collapse(true);
-            start = range.startContainer;
+            rangeNative.setStart(start, getOffsetNode(start));
+            rangeNative.collapse(true);
+            start = rangeNative.startContainer;
         }
 
         do {
-            if (range.startOffset === 0) {
-                start = range.startContainer.previousSibling;
+            diff = -1;
+
+            if (rangeNative.startOffset === 0) {
+                start = rangeNative.startContainer.previousSibling;
 
                 while (start && start.nodeType === Node.ELEMENT_NODE) {
+                    if (isEmptyNode(start)) {
+                        break;
+                    }
+
                     if (!(CKEDITOR.env.gecko && (start = start.firstChild))) {
                         start = start.lastChild;
                     }
                 }
 
-                if (!start || (start.nodeType === Node.TEXT_NODE && !REG_CHECK_EMPTY_STRING.test(start.nodeValue))) {
+                if (!start) {
                     break;
                 }
 
-                offset = start.nodeValue.length;
+                offset = getOffsetNode(start) || 1;
+
+                if (start.nodeType === Node.TEXT_NODE) {
+                    if (!REG_CHECK_EMPTY_STRING.test(start.nodeValue)) {
+                        if ((execReg = REG_BREAK_STRING.exec(start.nodeValue))) {
+                            offset = execReg.index;
+                            diff = 0;
+
+                        } else {
+                            break;
+                        }
+                    }
+                }
 
             } else {
-                start = range.startContainer;
-                offset = range.startOffset;
+                start = rangeNative.startContainer;
+                offset = rangeNative.startOffset;
             }
 
-            if (offset === 0) {
+            offset = offset + diff;
+
+            if (offset < 0) {
                 break;
             }
 
-            range.setStart(start, offset - 1);
-            charCode = range.toString().charCodeAt(0);
+            rangeNative.setStart(start, offset);
+            charCode = rangeNative.toString().charCodeAt(0);
 
         } while (charCode !== 160 && charCode !== 32);
 
-        if (!REG_CHECK_LINK.test(range.toString().replace(REG_REPLACE_EMPTY_CHAR, ''))) {
+        if (!REG_CHECK_LINK.test(rangeNative.toString().replace(REG_REPLACE_EMPTY_CHAR, ''))) {
             return;
         }
 
         var rangeString;
         var next;
-        while ((rangeString = range.toString()) && !REG_CHECK_LINK_START.test(rangeString)) {
+        while ((rangeString = rangeNative.toString()) && !REG_CHECK_LINK_START.test(rangeString)) {
             try {
-                range.setStart(range.startContainer, range.startOffset + 1);
+                rangeNative.setStart(rangeNative.startContainer, rangeNative.startOffset + 1);
 
             } catch (error) {
-                start = range.startContainer;
+                start = rangeNative.startContainer;
 
                 while (!(next = start.nextSibling)) {
                     if (!context.contains(start)) {
@@ -103,18 +126,18 @@
                     start = start.parentNode;
                 }
 
-                range.setStart(next, 0);
+                rangeNative.setStart(next, 0);
             }
         }
 
-        var mailto = range.toString().match(REG_MAILTO);
+        var mailto = rangeNative.toString().match(REG_MAILTO);
         if (mailto) {
             if (!REG_EMAIL.test(mailto[ 1 ])) {
                 return;
             }
         }
 
-        var parent = range.startContainer;
+        var parent = rangeNative.startContainer;
         do {
             if (!context.contains(parent)) {
                 break;
@@ -126,31 +149,48 @@
 
         } while ((parent = parent.parentNode));
 
+        applyLink(rangeNative, editor);
+    }
+
+    function applyLink(rangeNative, editor) {
         editor.fire('saveSnapshot');
 
-        var a = context.ownerDocument.createElement('a');
-        a.appendChild(range.extractContents());
-        a.href = a.innerHTML = a.innerHTML.replace(/<[^>]+>/g, '');
+        var range = editor.createRange();
+        range.setStart(new CKEDITOR.dom.node(rangeNative.startContainer), rangeNative.startOffset);
+        range.setEnd(new CKEDITOR.dom.node(rangeNative.endContainer), rangeNative.endOffset);
 
-        var href = a.getAttribute('href').replace(REG_REPLACE_EMPTY_CHAR, '');
-        if (!REG_HTTP.test(href) && !mailto) {
-            href = 'http://' + href;
-        }
+        var href = rangeNative.toString().replace(REG_REPLACE_EMPTY_CHAR, '');
         href = CKEDITOR.tools.htmlDecodeAttr(href);
 
-        a.setAttribute('data-cke-saved-href', href);
-        a.href = href;
-        range.insertNode(a);
+        if (!REG_HTTP.test(href) && !REG_MAILTO.test(href)) {
+            href = 'http://' + href;
+        }
 
-        var text = context.ownerDocument.createTextNode(' ');
-        a.parentNode.insertBefore(text, a.nextSibling);
-        range.setStart(text.nextSibling, 0);
-        range.collapse(true);
+        var style = new CKEDITOR.style({
+			'element': 'a',
+			'attributes': { 'href': href }
+		});
 
-        selection.removeAllRanges();
-        selection.addRange(range);
+        style.type = CKEDITOR.STYLE_INLINE;
+        style.applyToRange(range, editor);
 
         editor.fire('saveSnapshot');
+    }
+
+    function isEmptyNode(node) {
+        if (CKEDITOR.dtd.$inline[ node.tagName.toLowerCase() ] &&
+            !node.textContent.replace(REG_REPLACE_EMPTY_CHAR, '').length) {
+
+            return true;
+        }
+
+        return false;
+    }
+
+    function getOffsetNode(node) {
+        return node.nodeType === Node.ELEMENT_NODE ?
+            node.childNodes.length :
+            node.nodeValue.length;
     }
 
 }());
