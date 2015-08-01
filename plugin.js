@@ -73,6 +73,10 @@
                 offset = range.startOffset;
             }
 
+            if (offset === 0) {
+                break;
+            }
+
             range.setStart(start, offset - 1);
             charCode = range.toString().charCodeAt(0);
 
