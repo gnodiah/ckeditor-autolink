@@ -1,6 +1,8 @@
 (function() {
     'use strict';
 
+    var REG_CHECK_EMPTY_STRING = /^(\u200B|\ufeff)*$/;
+    var REG_FING_EMPTY_CHAR = /\u200B|\ufeff/g;
     var REG_CHECK_LINK = /(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.|mailto:)/i;
     var REG_CHECK_LINK_START = /^(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.|mailto:)/i;
     var REG_HTTP = /^https?:\/\//i;
@@ -12,18 +14,6 @@
 
         init: function(editor) {
             editor.on('instanceReady', function() {
-                // skip IE
-                // especially IE 11, because its User-Agent is Gecko, not MSIE
-                if (CKEDITOR.env.ie || (CKEDITOR.env.gecko && CKEDITOR.env.version === 110000)) {
-                    return;
-                }
-
-                var fillChar = CKEDITOR.env.ie && CKEDITOR.env.version == '6' ? '\ufeff' : '\u200B';
-
-                var isFillChar = function (node, isInStart) {
-                    return node.nodeType == 3 && !node.nodeValue.replace(new RegExp((isInStart ? '^' : '' ) + fillChar), '').length
-                };
-
                 var inContext = function(node) {
                     return editor.editable().$.contains(node);
                 };
@@ -68,24 +58,25 @@
                     var charCode;
 
                     var start = range.startContainer;
-                    while (start.nodeType == 1 && range.startOffset > 0) {
-                        start = range.startContainer.childNodes[range.startOffset - 1];
+                    while (start.nodeType === 1 && range.startOffset > 0) {
+                        start = range.startContainer.childNodes[ range.startOffset - 1 ];
                         if (!start) {
                             break;
                         }
 
-                        range.setStart(start, start.nodeType == 1 ? start.childNodes.length : start.nodeValue.length);
+                        range.setStart(start, start.nodeType === 1 ? start.childNodes.length : start.nodeValue.length);
                         range.collapse(true);
                         start = range.startContainer;
                     }
 
                     do {
-                        if (range.startOffset == 0) {
+                        if (range.startOffset === 0) {
                             start = range.startContainer.previousSibling;
 
-                            while (start && start.nodeType == 1) {
+                            while (start && start.nodeType === 1) {
                                 if (CKEDITOR.env.gecko && start.firstChild) {
                                     start = start.firstChild;
+
                                 } else {
                                     start = start.lastChild;
                                 }
@@ -107,7 +98,7 @@
 
                     } while (charCode != 160 && charCode != 32);
 
-                    if (REG_CHECK_LINK.test(range.toString().replace(new RegExp(fillChar, 'g'), ''))) {
+                    if (REG_CHECK_LINK.test(range.toString().replace(REG_FING_EMPTY_CHAR, ''))) {
                         while (range.toString().length) {
                             if (REG_CHECK_LINK_START.test(range.toString())) {
                                 break;
@@ -148,7 +139,7 @@
                         a.appendChild(range.extractContents());
                         a.href = a.innerHTML = a.innerHTML.replace(/<[^>]+>/g, '');
 
-                        var href = a.getAttribute('href').replace(new RegExp(fillChar, 'g'), '');
+                        var href = a.getAttribute('href').replace(REG_FING_EMPTY_CHAR, '');
                         if (!REG_HTTP.test(href) && !mailto) {
                             href = 'http://' + href;
                         }
@@ -180,5 +171,9 @@
             });
         }
     });
+
+    function isFillChar(node, isInStart) {
+        return (node.nodeType === 3 && !REG_CHECK_EMPTY_STRING.test(node.nodeValue));
+    }
 
 }());
