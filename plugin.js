@@ -5,7 +5,7 @@
     var REG_REPLACE_EMPTY_CHAR = /\u200B|\ufeff/g;
     var REG_CHECK_LINK = /(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.|mailto:)/i;
     var REG_CHECK_LINK_START = /^(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|www\.|mailto:)/i;
-    var REG_HTTP = /^https?:\/\//i;
+    var REG_PROTO_HTTP = /^(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|mailto:)/i;
     var REG_MAILTO = /^mailto:([^\?]+)/i;
     var REG_EMAIL = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})$/i;
     var REG_BREAK_STRING = /(?:^|\s)\S+$/;
@@ -162,7 +162,7 @@
         var href = rangeNative.toString().replace(REG_REPLACE_EMPTY_CHAR, '');
         href = CKEDITOR.tools.htmlDecodeAttr(href);
 
-        if (!REG_HTTP.test(href) && !REG_MAILTO.test(href)) {
+        if (!REG_PROTO_HTTP.test(href)) {
             href = 'http://' + href;
         }
 
