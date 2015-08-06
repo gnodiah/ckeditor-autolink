@@ -185,9 +185,9 @@
         }
 
         var style = new CKEDITOR.style({
-			'element': 'a',
-			'attributes': { 'href': href }
-		});
+            'element': 'a',
+            'attributes': { 'href': href }
+        });
 
         style.type = CKEDITOR.STYLE_INLINE;
         style.applyToRange(range, editor);
