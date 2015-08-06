@@ -8,6 +8,8 @@
     var REG_PROTO_HTTP = /^(?:https?:\/\/|ssh:\/\/|ftp:\/\/|file:\/|mailto:)/i;
     var REG_MAILTO = /^mailto:([^\?]+)/i;
     var REG_EMAIL = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})$/i;
+    var REG_CHECK_EMAIL = /(?:^|\s+)[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})(?:$|\s+)/i;
+    var REG_CHECK_EMAIL_START = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})/i;
     var REG_BREAK_STRING = /(?:^|\s)\S+$/;
 
     CKEDITOR.plugins.add('autolink2', {
@@ -105,13 +107,24 @@
 
         } while (charCode !== 160 && charCode !== 32);
 
-        if (!REG_CHECK_LINK.test(rangeNative.toString().replace(REG_REPLACE_EMPTY_CHAR, ''))) {
+        var rangeString = rangeNative.toString().replace(REG_REPLACE_EMPTY_CHAR, '');
+        var isLink = REG_CHECK_LINK.test(rangeString);
+        var isEmail = REG_CHECK_EMAIL.test(rangeString);
+
+        if (!isLink && !isEmail) {
             return;
         }
 
-        var rangeString;
         var next;
-        while ((rangeString = rangeNative.toString()) && !REG_CHECK_LINK_START.test(rangeString)) {
+        while ((rangeString = rangeNative.toString())) {
+            if (isLink && REG_CHECK_LINK_START.test(rangeString)) {
+                break;
+            }
+
+            if (isEmail && REG_CHECK_EMAIL_START.test(rangeString)) {
+                break;
+            }
+
             try {
                 rangeNative.setStart(rangeNative.startContainer, rangeNative.startOffset + 1);
 
@@ -163,7 +176,12 @@
         href = CKEDITOR.tools.htmlDecodeAttr(href);
 
         if (!REG_PROTO_HTTP.test(href)) {
-            href = 'http://' + href;
+            if (REG_EMAIL.test(href)) {
+                href = 'mailto:' + href;
+
+            } else {
+                href = 'http://' + href;
+            }
         }
 
         var style = new CKEDITOR.style({
