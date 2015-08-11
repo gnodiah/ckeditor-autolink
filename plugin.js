@@ -195,7 +195,13 @@
 
         editor.fire('saveSnapshot');
 
-        range.moveToPosition(endNode, CKEDITOR.POSITION_AFTER_END);
+        var linkNode = range.getCommonAncestor();
+        var textNode = new CKEDITOR.dom.text('');
+        textNode.insertAfter(linkNode);
+
+        range = editor.createRange();
+        range.setStart(textNode);
+        range.collapse();
         editor.getSelection().selectRanges([ range ]);
     }
 
