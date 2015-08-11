@@ -1,6 +1,6 @@
 {
   "name": "ckeditor-autolink2",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "A hyperlink auto-generator plugin for CKEditor",
   "main": "plugin.js",
   "scripts": {

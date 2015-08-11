@@ -169,8 +169,11 @@
         editor.fire('saveSnapshot');
 
         var range = editor.createRange();
-        range.setStart(new CKEDITOR.dom.node(rangeNative.startContainer), rangeNative.startOffset);
-        range.setEnd(new CKEDITOR.dom.node(rangeNative.endContainer), rangeNative.endOffset);
+        var startNode = new CKEDITOR.dom.node(rangeNative.startContainer);
+        var endNode = new CKEDITOR.dom.node(rangeNative.endContainer);
+
+        range.setStart(startNode, rangeNative.startOffset);
+        range.setEnd(endNode, rangeNative.endOffset);
 
         var href = rangeNative.toString().replace(REG_REPLACE_EMPTY_CHAR, '');
         href = CKEDITOR.tools.htmlDecodeAttr(href);
@@ -193,6 +196,9 @@
         style.applyToRange(range, editor);
 
         editor.fire('saveSnapshot');
+
+        range.moveToPosition(endNode, CKEDITOR.POSITION_AFTER_END);
+        editor.getSelection().selectRanges([ range ]);
     }
 
     function isEmptyNode(node) {
