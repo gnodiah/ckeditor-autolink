@@ -19,9 +19,7 @@
             editor.addCommand('autolink2', {
                 'modes': { 'wysiwyg': 1 },
                 'editorFocus': false,
-                'exec': function(editor) {
-                    autolink(editor);
-                }
+                'exec': autolink
             } );
 
             editor.on('key', function(event) {
