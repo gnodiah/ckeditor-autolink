@@ -24,5 +24,10 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/Katochimoto/ckeditor-autolink2.git"
+  },
+  "devDependencies": {
+    "vow": "0.4.10",
+    "lodash": "3.10.1",
+    "ckeditor": "git://github.com/Katochimoto/ckeditor.git"
   }
 }
