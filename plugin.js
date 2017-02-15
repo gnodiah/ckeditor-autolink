@@ -11,6 +11,7 @@
     var REG_CHECK_EMAIL = /(?:^|\s+)[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})(?:$|\s+)/i;
     var REG_CHECK_EMAIL_START = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})/i;
     var REG_BREAK_STRING = /(?:^|\s)\S+$/;
+    var TRAILING_PUNCTUATION = /([,.!:;?]+)$/;
 
     CKEDITOR.plugins.add('autolink2', {
         'modes': { 'wysiwyg': 1 },
@@ -43,6 +44,7 @@
         var start = rangeNative.startContainer;
         var execReg;
         var diff;
+        var savedCursorPosition = saveCursorPosition(selection);
 
         while (start.nodeType === Node.ELEMENT_NODE && rangeNative.startOffset > 0) {
             start = rangeNative.startContainer.childNodes[ rangeNative.startOffset - 1 ];
@@ -160,10 +162,20 @@
 
         } while ((parent = parent.parentNode));
 
-        applyLink(rangeNative, editor);
+        // Excluding of punctuation mark at the end of link.
+        var linkEndsWithPunctuationMark = isLink && TRAILING_PUNCTUATION.exec(rangeString);
+        if (linkEndsWithPunctuationMark) {
+            var changedEndOffset = rangeNative.endOffset - linkEndsWithPunctuationMark[1].length;
+            // changedEndOffset will less then 0 if rangeNative contains not only TextNodes(e.g. HTMLImageElement)
+            if (changedEndOffset >= 0) {
+                rangeNative.setEnd(rangeNative.endContainer, changedEndOffset);
+            }
+        }
+
+        applyLink(rangeNative, editor, savedCursorPosition);
     }
 
-    function applyLink(rangeNative, editor) {
+    function applyLink(rangeNative, editor, savedCursorPosition) {
         editor.fire('saveSnapshot');
 
         var range = editor.createRange();
@@ -194,13 +206,20 @@
         style.applyToRange(range, editor);
 
         editor.fire('saveSnapshot');
+        restoreCursorPosition(editor, savedCursorPosition);
+    }
 
-        var linkNode = range.getCommonAncestor();
-        var textNode = new CKEDITOR.dom.text('');
-        textNode.insertAfter(linkNode);
+    function saveCursorPosition(selection) {
+        var savedCursorPosition = new CKEDITOR.dom.text('');
+        var tempRange = selection.getRanges()[0].clone();
+        tempRange.collapse();
+        tempRange.insertNode(savedCursorPosition);
+        return savedCursorPosition;
+    }
 
-        range = editor.createRange();
-        range.setStart(textNode);
+    function restoreCursorPosition(editor, savedCursorPosition) {
+        var range = editor.createRange();
+        range.setStart(savedCursorPosition);
         range.collapse();
         editor.getSelection().selectRanges([ range ]);
     }
