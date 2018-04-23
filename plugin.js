@@ -10,8 +10,11 @@
     var REG_EMAIL = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})$/i;
     var REG_CHECK_EMAIL = /(?:^|\s+)[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})(?:$|\s+)/i;
     var REG_CHECK_EMAIL_START = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})/i;
-    var REG_BREAK_STRING = /(?:^|\s)\S+$/;
     var TRAILING_PUNCTUATION = /([,.!:;?]+)$/;
+    var CKEDITOR_SPACE = 32;
+    var CKEDITOR_ENTER = 13;
+    var CKEDITOR_SHIFT_ENTER = 2228237;
+    var CKEDITOR_LINK_GENERATE_KEYS = [ CKEDITOR_SPACE, CKEDITOR_ENTER, CKEDITOR_SHIFT_ENTER ];
 
     CKEDITOR.plugins.add('autolink2', {
         'modes': { 'wysiwyg': 1 },
@@ -28,7 +31,9 @@
                     return;
                 }
 
-                if (event.data.keyCode === 32 || event.data.keyCode === 13) {
+                var ckeditorKeyCode = event.data.keyCode;
+
+                if (CKEDITOR_LINK_GENERATE_KEYS.indexOf(ckeditorKeyCode) > -1) {
                     this.execCommand('autolink2');
                 }
             });
@@ -42,7 +47,6 @@
         var offset;
         var charCode;
         var start = rangeNative.startContainer;
-        var execReg;
         var diff;
         var savedCursorPosition = saveCursorPosition(selection);
 
@@ -77,18 +81,14 @@
                     break;
                 }
 
-                offset = getOffsetNode(start) || 1;
+                var defaultOffset = start.nodeType === Node.ELEMENT_NODE ? 0 : 1
 
-                if (start.nodeType === Node.TEXT_NODE) {
-                    if (!REG_CHECK_EMPTY_STRING.test(start.nodeValue)) {
-                        if ((execReg = REG_BREAK_STRING.exec(start.nodeValue))) {
-                            offset = execReg.index;
-                            diff = 0;
+                offset = getOffsetNode(start) || defaultOffset;
+                var isLineBreak = start && start.nodeType === Node.TEXT_NODE &&
+                    REG_CHECK_EMPTY_STRING.test(start.nodeValue);
 
-                        } else {
-                            break;
-                        }
-                    }
+                if (!offset || isLineBreak) {
+                    break;
                 }
 
             } else {
