@@ -179,6 +179,7 @@
         editor.fire('saveSnapshot');
 
         var range = editor.createRange();
+
         var startNode = new CKEDITOR.dom.node(rangeNative.startContainer);
         var endNode = new CKEDITOR.dom.node(rangeNative.endContainer);
 
@@ -206,7 +207,7 @@
         style.applyToRange(range, editor);
 
         editor.fire('saveSnapshot');
-        restoreCursorPosition(editor, savedCursorPosition);
+        restoreCursorPosition(editor, savedCursorPosition, rangeNative);
     }
 
     function saveCursorPosition(selection) {
@@ -217,11 +218,26 @@
         return savedCursorPosition;
     }
 
-    function restoreCursorPosition(editor, savedCursorPosition) {
+    function restoreCursorPosition(editor, savedCursorPosition, linkNativeRange) {
         var range = editor.createRange();
         range.setStart(savedCursorPosition);
         range.collapse();
+
         editor.getSelection().selectRanges([ range ]);
+
+        var restoredNativeRange = editor.getSelection().getNative().getRangeAt(0);
+
+        var restoredParent = restoredNativeRange.startContainer && restoredNativeRange.startContainer.parentNode;
+        var linkTextParent = linkNativeRange.startContainer && linkNativeRange.startContainer.parentNode;
+
+        // IE special cases
+        // Cursor must be outside of link (a) element
+        if (restoredParent && linkTextParent && restoredParent === linkTextParent) {
+            var newRestoredRange = editor.createRange();
+            newRestoredRange.setEndAfter(new CKEDITOR.dom.node(linkTextParent));
+            newRestoredRange.collapse();
+            editor.getSelection().selectRanges([ newRestoredRange ]);
+        }
     }
 
     function isEmptyNode(node) {
