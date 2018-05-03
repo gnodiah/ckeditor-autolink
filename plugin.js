@@ -46,9 +46,9 @@
         var rangeNative = selection.getNative().getRangeAt(0).cloneRange();
         var offset;
         var charCode;
-        var start = rangeNative.startContainer;
         var diff;
         var savedCursorPosition = saveCursorPosition(selection);
+        var start = rangeNative.startContainer;
 
         while (start.nodeType === Node.ELEMENT_NODE && rangeNative.startOffset > 0) {
             start = rangeNative.startContainer.childNodes[ rangeNative.startOffset - 1 ];
@@ -230,9 +230,12 @@
         var restoredParent = restoredNativeRange.startContainer && restoredNativeRange.startContainer.parentNode;
         var linkTextParent = linkNativeRange.startContainer && linkNativeRange.startContainer.parentNode;
 
+        var isCursorInsideLink = restoredParent && linkTextParent &&
+            restoredParent === linkTextParent && linkTextParent.tagName === 'A';
+
         // IE special cases
         // Cursor must be outside of link (a) element
-        if (restoredParent && linkTextParent && restoredParent === linkTextParent) {
+        if (isCursorInsideLink) {
             var newRestoredRange = editor.createRange();
             newRestoredRange.setEndAfter(new CKEDITOR.dom.node(linkTextParent));
             newRestoredRange.collapse();
