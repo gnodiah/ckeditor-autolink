@@ -10,8 +10,11 @@
     var REG_EMAIL = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})$/i;
     var REG_CHECK_EMAIL = /(?:^|\s+)[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})(?:$|\s+)/i;
     var REG_CHECK_EMAIL_START = /^[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9!#$%&'*+\/=?.^_`{|}~-]+?@(?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9](?:[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9-_]*?[a-zа-яёÇçĞğIıİiÖöŞşÜüẞß0-9])?\.)+?(?:xn--[-a-z0-9]+|[a-zа-яё]{2,}|\d{1,3})/i;
-    var REG_BREAK_STRING = /(?:^|\s)\S+$/;
     var TRAILING_PUNCTUATION = /([,.!:;?]+)$/;
+    var CKEDITOR_SPACE = 32;
+    var CKEDITOR_ENTER = 13;
+    var CKEDITOR_SHIFT_ENTER = 2228237;
+    var CKEDITOR_LINK_GENERATE_KEYS = [ CKEDITOR_SPACE, CKEDITOR_ENTER, CKEDITOR_SHIFT_ENTER ];
 
     CKEDITOR.plugins.add('autolink2', {
         'modes': { 'wysiwyg': 1 },
@@ -28,7 +31,9 @@
                     return;
                 }
 
-                if (event.data.keyCode === 32 || event.data.keyCode === 13) {
+                var ckeditorKeyCode = event.data.keyCode;
+
+                if (CKEDITOR_LINK_GENERATE_KEYS.indexOf(ckeditorKeyCode) > -1) {
                     this.execCommand('autolink2');
                 }
             });
@@ -41,10 +46,9 @@
         var rangeNative = selection.getNative().getRangeAt(0).cloneRange();
         var offset;
         var charCode;
-        var start = rangeNative.startContainer;
-        var execReg;
         var diff;
         var savedCursorPosition = saveCursorPosition(selection);
+        var start = rangeNative.startContainer;
 
         while (start.nodeType === Node.ELEMENT_NODE && rangeNative.startOffset > 0) {
             start = rangeNative.startContainer.childNodes[ rangeNative.startOffset - 1 ];
@@ -77,18 +81,14 @@
                     break;
                 }
 
-                offset = getOffsetNode(start) || 1;
+                var defaultOffset = start.nodeType === Node.ELEMENT_NODE ? 0 : 1
 
-                if (start.nodeType === Node.TEXT_NODE) {
-                    if (!REG_CHECK_EMPTY_STRING.test(start.nodeValue)) {
-                        if ((execReg = REG_BREAK_STRING.exec(start.nodeValue))) {
-                            offset = execReg.index;
-                            diff = 0;
+                offset = getOffsetNode(start) || defaultOffset;
+                var isLineBreak = start && start.nodeType === Node.TEXT_NODE &&
+                    REG_CHECK_EMPTY_STRING.test(start.nodeValue);
 
-                        } else {
-                            break;
-                        }
-                    }
+                if (!offset || isLineBreak) {
+                    break;
                 }
 
             } else {
@@ -179,6 +179,7 @@
         editor.fire('saveSnapshot');
 
         var range = editor.createRange();
+
         var startNode = new CKEDITOR.dom.node(rangeNative.startContainer);
         var endNode = new CKEDITOR.dom.node(rangeNative.endContainer);
 
@@ -206,7 +207,7 @@
         style.applyToRange(range, editor);
 
         editor.fire('saveSnapshot');
-        restoreCursorPosition(editor, savedCursorPosition);
+        restoreCursorPosition(editor, savedCursorPosition, rangeNative);
     }
 
     function saveCursorPosition(selection) {
@@ -217,11 +218,29 @@
         return savedCursorPosition;
     }
 
-    function restoreCursorPosition(editor, savedCursorPosition) {
+    function restoreCursorPosition(editor, savedCursorPosition, linkNativeRange) {
         var range = editor.createRange();
         range.setStart(savedCursorPosition);
         range.collapse();
+
         editor.getSelection().selectRanges([ range ]);
+
+        var restoredNativeRange = editor.getSelection().getNative().getRangeAt(0);
+
+        var restoredParent = restoredNativeRange.startContainer && restoredNativeRange.startContainer.parentNode;
+        var linkTextParent = linkNativeRange.startContainer && linkNativeRange.startContainer.parentNode;
+
+        var isCursorInsideLink = restoredParent && linkTextParent &&
+            restoredParent === linkTextParent && linkTextParent.tagName === 'A';
+
+        // IE special cases
+        // Cursor must be outside of link (a) element
+        if (isCursorInsideLink) {
+            var newRestoredRange = editor.createRange();
+            newRestoredRange.setEndAfter(new CKEDITOR.dom.node(linkTextParent));
+            newRestoredRange.collapse();
+            editor.getSelection().selectRanges([ newRestoredRange ]);
+        }
     }
 
     function isEmptyNode(node) {
