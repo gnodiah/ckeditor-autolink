@@ -1,0 +1,8 @@
+.npmignore
+.idea
+.git
+.npm-debug.log
+.gitignore
+node_modules
+bower_components
+samples

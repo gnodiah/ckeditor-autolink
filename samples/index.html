@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+        window.CKEDITOR_BASEPATH = '../node_modules/ckeditor/dist/ckeditor/';
+    </script>
+    <script src="../node_modules/lodash/index.js"></script>
+    <script src="../node_modules/vow/vow.min.js"></script>
+    <script src="../node_modules/ckeditor/dist/ckeditor-full.js"></script>
+    <script src="../plugin.js"></script>
+</head>
+<body>
+    <textarea id="editor"></textarea>
+<script>
+(function() {
+    var content = '<div>somename@somedomain.com</div>' +
+        '<div>mailto:somename@somedomain.com</div>' +
+        '<div>www.somedomain.com</div>' +
+        '<div>http://somedomain.com</div>' +
+        '<div>https://somedomain.com</div>' +
+        '<div>ftp://somedomain.com</div>' +
+        '<div>file:/somefile</div>' +
+        '<div>mailto:somename@somedomain.com</div>';
+
+    var config = {
+        'themeResetAll': false,
+        'language': 'ru',
+        'enableHotkeys': true,
+        'title': '',
+        'height': 500,
+        'extraPlugins': 'autolink2',
+        'on': {
+            'instanceReady': function() {
+                this.setData(content);
+            }
+        }
+    };
+
+    CKEDITOR.editorConfig(config);
+
+    CKEDITOR.replace('editor', config);
+}());
+</script>
+</body>
+</html>
